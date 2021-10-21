@@ -1,4 +1,4 @@
-package ru.unisuite.pdfwatermark;
+package ru.unisuite.pdfprocessor;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties(PdfProcessorProperties.class)
-public class PdfWatermarkApplication {
+public class PdfProcessorApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(PdfWatermarkApplication.class, args);
+        SpringApplication.run(PdfProcessorApplication.class, args);
     }
 
 }

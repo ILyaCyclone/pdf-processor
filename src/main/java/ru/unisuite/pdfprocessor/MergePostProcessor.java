@@ -1,4 +1,4 @@
-package ru.unisuite.pdfwatermark;
+package ru.unisuite.pdfprocessor;
 
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;

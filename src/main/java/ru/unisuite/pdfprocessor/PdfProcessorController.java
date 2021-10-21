@@ -1,4 +1,4 @@
-package ru.unisuite.pdfwatermark;
+package ru.unisuite.pdfprocessor;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.IOUtils;

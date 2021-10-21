@@ -1,4 +1,4 @@
-package ru.unisuite.pdfwatermark;
+package ru.unisuite.pdfprocessor;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
