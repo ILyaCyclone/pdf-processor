@@ -9,11 +9,11 @@
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>ru.unisuite</groupId>
-  <artifactId>pdf-watermark</artifactId>
+  <artifactId>pdf-processor</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>war</packaging>
-  <name>pdf-watermark</name>
-  <description>pdf-watermark</description>
+  <name>pdf-processor</name>
+  <description>pdf-processor</description>
 
   <properties>
     <java.version>1.8</java.version>
@@ -66,6 +66,7 @@
   </dependencies>
 
   <build>
+    <finalName>aa_pdf-processor</finalName>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
