@@ -26,6 +26,8 @@ import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 public class PdfProcessorController {
     private static final Logger logger = LoggerFactory.getLogger(PdfProcessorController.class);
 
+    private final PdfProcessorProperties pdfProcessorProperties;
+
     private final OverlayPostProcessor overlayPostProcessor;
     private final MergePostProcessor mergePostProcessor;
 
@@ -38,9 +40,17 @@ public class PdfProcessorController {
                         @RequestParam(name = "attachment", defaultValue = "0") String attachmentParam,
                         @RequestParam(name = "pages", defaultValue = "1") String pages,
                         HttpServletResponse response) throws IOException {
+        logger.trace("overlay {attachment='{}', pages='{}'}", attachmentParam, pages);
+
+        attachmentParam = weblogicKostyl(attachmentParam);
+//        pages = weblogicKostyl(pages); // let pages have commas
 
         PdfAttachment pdfAttachment = extractPdfAttachment(attachmentParam);
-        Supplier<InputStream> attachmentInputStreamSupplier = getPdfAttachmentImputStreamSupplier(pdfAttachment);
+        if (pdfAttachment == null) {
+            throw new IllegalArgumentException("PdfAttachment not found by parameter '" + attachmentParam + '\'');
+        }
+
+        Supplier<InputStream> attachmentInputStreamSupplier = getPdfAttachmentInputStreamSupplier(pdfAttachment);
 
         try {
             overlayPostProcessor.overlay(response.getOutputStream(), file.getInputStream(), attachmentInputStreamSupplier, pages);
@@ -53,13 +63,17 @@ public class PdfProcessorController {
 
 
     @PostMapping(path = "/merge", consumes = MULTIPART_FORM_DATA_VALUE)
-    public void process(@RequestParam("file") MultipartFile file,
-                        @RequestParam(name = "attachment", defaultValue = "0") String attachmentParam,
-                        @RequestParam(name = "position", defaultValue = "before") String position,
-                        HttpServletResponse response) throws IOException {
+    public void merge(@RequestParam("file") MultipartFile file,
+                      @RequestParam(name = "attachment", defaultValue = "0") String attachmentParam,
+                      @RequestParam(name = "position", defaultValue = "before") String position,
+                      HttpServletResponse response) throws IOException {
+        logger.trace("merge {attachment='{}', position='{}'}", attachmentParam, position);
+
+        attachmentParam = weblogicKostyl(attachmentParam);
+        position = weblogicKostyl(position);
 
         PdfAttachment pdfAttachment = extractPdfAttachment(attachmentParam);
-        Supplier<InputStream> attachmentInputStreamSupplier = getPdfAttachmentImputStreamSupplier(pdfAttachment);
+        Supplier<InputStream> attachmentInputStreamSupplier = getPdfAttachmentInputStreamSupplier(pdfAttachment);
 
         try {
             mergePostProcessor.merge(response.getOutputStream(), file.getInputStream(), attachmentInputStreamSupplier, position);
@@ -71,8 +85,7 @@ public class PdfProcessorController {
 
 
 
-    private Supplier<InputStream> getPdfAttachmentImputStreamSupplier(PdfAttachment pdfAttachment) {
-        //TODO make ENUM
+    private Supplier<InputStream> getPdfAttachmentInputStreamSupplier(PdfAttachment pdfAttachment) {
         switch (pdfAttachment.getType()) {
             case "file":
                 return () -> {
@@ -91,6 +104,16 @@ public class PdfProcessorController {
                         throw new RuntimeException("Could not get '" + pdfAttachment.getName() + "' pdf attachment input stream " + pdfAttachment.getSource() + "'", e);
                     }
                 };
+
+            case "content-version-alias":
+                return () -> {
+                    try {
+                        String url = pdfProcessorProperties.getContentServiceUrl() + '/' + pdfAttachment.getName() + "?alias_wm=" + pdfAttachment.getSource();
+                        return new URL(url).openStream();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Could not get '" + pdfAttachment.getName() + "' pdf attachment input stream " + pdfAttachment.getSource() + "'", e);
+                    }
+                };
         }
         throw new IllegalArgumentException("Unknown pdf attachment type '" + pdfAttachment.getType() + '\'');
     }
@@ -102,6 +125,11 @@ public class PdfProcessorController {
         } catch (NumberFormatException nfe) {
             return namedAttachments.get(attachmentParam);
         }
+    }
+
+    //TODO workaround: on Weblogic param values come as "value,value" instead of "value"
+    private String weblogicKostyl(String parameter) {
+        return parameter.split(",")[0];
     }
 
 }

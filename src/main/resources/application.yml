@@ -1,0 +1,12 @@
+pdf-processor:
+  max-file-size: 100MB
+  content-service-url: http://localhost:7003/content3/get/
+
+spring:
+  config.import: optional:file:${pdf-processor.attachments-source.file:/u01/scr/pdf-processor/attachments.yml}
+
+  servlet.multipart:
+    max-file-size: ${pdf-processor.max-file-size}
+    max-request-size: ${pdf-processor.max-file-size}
+
+server.tomcat.max-http-form-post-size: ${pdf-processor.max-file-size}

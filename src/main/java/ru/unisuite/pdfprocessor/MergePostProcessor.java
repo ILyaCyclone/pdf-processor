@@ -15,6 +15,8 @@ import java.util.function.Supplier;
 public class MergePostProcessor {
     private static final Logger logger = LoggerFactory.getLogger(MergePostProcessor.class);
 
+    static final long MAX_MEMORY_BYTES = 3L * 1024 * 1024; // 3Mb
+
     public void merge(ServletOutputStream out, InputStream originalDocumentInputStream,
                       Supplier<InputStream> attachmentDocumentInputStreamSupplier,
                       String position) throws IOException {
@@ -44,7 +46,7 @@ public class MergePostProcessor {
                 merger.addSource(originalDocumentInputStream);
         }
 
-        merger.mergeDocuments(MemoryUsageSetting.setupMixed(3 * 1024 * 1000 * 1000));
+        merger.mergeDocuments(MemoryUsageSetting.setupMixed(MAX_MEMORY_BYTES));
     }
 
 }
