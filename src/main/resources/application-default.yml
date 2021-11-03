@@ -1,0 +1,13 @@
+server:
+  servlet.context-path: /pdfprocess
+  error.include-stacktrace: never #don't include stacktrace to error page
+
+pdf-processor:
+  config:
+    attachments-source:
+      type: database-content-version-alias
+      datasource-jndi-name: jdbc/ds_basic
+      content-version-alias: pdf-processor.config.attachments.properties
+
+spring:
+  main.banner-mode: 'off'
