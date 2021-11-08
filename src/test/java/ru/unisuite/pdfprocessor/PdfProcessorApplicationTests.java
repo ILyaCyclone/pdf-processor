@@ -1,8 +1,8 @@
 package ru.unisuite.pdfprocessor;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -62,11 +63,8 @@ class PdfProcessorApplicationTests {
                 .allMatch(StringUtils::hasText);
     }
 
-    //TODO merge test: files are identical visually, but bytes comparison differ
-    @Disabled("files are identical visually, but bytes comparison differ")
-    @Test
-//    @ParameterizedTest
-//    @CsvSource({"att1,after", "att1,before", "att2,both"})
+    @ParameterizedTest
+    @CsvSource({"att1,after", "att1,before", "att2,both"})
     void merge(String attachment, String position) throws IOException {
         String method = "merge";
         Map<String, String> parameters = new HashMap<>();
@@ -94,25 +92,32 @@ class PdfProcessorApplicationTests {
 
 
     private void performTest(String method, Map<String, String> parameters, String filename) throws IOException {
+        // get rid of random PDF trailer /ID section
+        PDDocument actualDocument = PDDocument.load(callPdfProcessor(method, parameters));
+        actualDocument.setDocumentId(1L);
+        actualDocument.getDocument().getDocumentID().clear();
+
+        Path actualTempFile = Files.createTempFile("pdf-processor_" + filename + "_actual_", ".pdf");
+        try (OutputStream actualTempOut = Files.newOutputStream(actualTempFile)) {
+            actualDocument.save(actualTempOut);
+        }
+
         ClassPathResource expectedResource = new ClassPathResource("expected/" + filename + ".pdf");
+        try (InputStream expectedResourceIn = expectedResource.getInputStream();
+             InputStream actualTempFileIn = Files.newInputStream(actualTempFile)) {
+            Assertions.assertTrue(IOUtils.contentEquals(expectedResourceIn, actualTempFileIn)
+                    , () -> {
+                        try {
+                            Path expectedTempFile = Files.createTempFile("pdf-processor_" + filename + "_expected_", ".pdf");
+                            Files.copy(expectedResourceIn, expectedTempFile, StandardCopyOption.REPLACE_EXISTING);
 
-        InputStream result = callPdfProcessor(method, parameters);
-
-        Assertions.assertTrue(IOUtils.contentEquals(expectedResource.getInputStream(), result)
-                , () -> {
-                    try {
-                        Path actualTempFile = Files.createTempFile("pdf-processor_" + filename + "_actual_", ".pdf");
-                        Files.copy(callPdfProcessor(method, parameters), actualTempFile, StandardCopyOption.REPLACE_EXISTING);
-
-                        Path expectedTempFile = Files.createTempFile("pdf-processor_" + filename + "_expected_", ".pdf");
-                        Files.copy(expectedResource.getInputStream(), expectedTempFile, StandardCopyOption.REPLACE_EXISTING);
-
-                        return "Result content not equal expected file. Result file saved to " + actualTempFile.toAbsolutePath()
-                                + ", expected file saved to " + expectedTempFile.toAbsolutePath();
-                    } catch (IOException e) {
-                        return "Result content not equal expected file. Could not save result to temp file fir visual comparison (" + e.getMessage() + ')';
-                    }
-                });
+                            return "Result content not equal expected file. Result file saved to " + actualTempFile.toAbsolutePath()
+                                    + ", expected file saved to " + expectedTempFile.toAbsolutePath();
+                        } catch (IOException e) {
+                            return "Result content not equal expected file. Could not save result to temp file fir visual comparison (" + e.getMessage() + ')';
+                        }
+                    });
+        }
     }
 
     private InputStream callPdfProcessor(String method, Map<String, String> parameters) {
