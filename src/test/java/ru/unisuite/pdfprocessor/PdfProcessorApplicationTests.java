@@ -128,6 +128,9 @@ class PdfProcessorApplicationTests {
         String url = baseUrl() + '/' + method;
 
         ResponseEntity<byte[]> responseEntity = restTemplate.postForEntity(url, requestEntity, byte[].class);
+        if (responseEntity.getStatusCode().isError()) {
+            throw new RuntimeException("Error calling PDF processor, result code: " + responseEntity.getStatusCode());
+        }
 
         return new ByteArrayInputStream(responseEntity.getBody());
     }

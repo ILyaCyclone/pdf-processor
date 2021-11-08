@@ -1,7 +1,6 @@
 package ru.unisuite.pdfprocessor;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,8 +54,8 @@ public class PdfProcessorController {
         try {
             overlayPostProcessor.overlay(response.getOutputStream(), file.getInputStream(), attachmentInputStreamSupplier, pages);
         } catch (Exception e) {
-            logger.error("overlayPostProcessor failed {attachment='{}', pages='{}'}", attachmentParam, pages, e);
-            IOUtils.copy(file.getInputStream(), response.getOutputStream());
+            throw new PdfProcessorException("merge operation failed {attachment='" + attachmentParam +
+                    "', pages='" + pages + "'}", e);
         }
     }
 
@@ -78,8 +77,8 @@ public class PdfProcessorController {
         try {
             mergePostProcessor.merge(response.getOutputStream(), file.getInputStream(), attachmentInputStreamSupplier, position);
         } catch (Exception e) {
-            logger.error("mergePostProcessor failed {attachment='{}', position='{}'}", attachmentParam, position, e);
-            IOUtils.copy(file.getInputStream(), response.getOutputStream());
+            throw new PdfProcessorException("merge operation failed {attachment='" + attachmentParam +
+                    "', position='" + position + "'}", e);
         }
     }
 
